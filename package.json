@@ -1,0 +1,19 @@
+{
+  "name": "firebase-notification",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": "16.20.2",
+    "npm": "8.19.4"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
+  }
+}
