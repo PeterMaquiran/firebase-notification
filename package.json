@@ -2,10 +2,12 @@
   "name": "firebase-notification",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
-  "type": "module",
+  "main": "index.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "tsx index.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
   },
   "engines": {
     "node": "16.20.2",
@@ -15,5 +17,11 @@
   "license": "ISC",
   "dependencies": {
     "firebase-admin": "^12.7.0"
-  }
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "tsx": "^4.23.11",
+    "typescript": "^7.0.2"
+  },
+  "type": "module"
 }
