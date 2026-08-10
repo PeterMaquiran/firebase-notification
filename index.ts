@@ -1,38 +1,66 @@
 import 'dotenv/config';
+import express, { type Request, type Response } from 'express';
 import admin from 'firebase-admin';
 import type { Message } from 'firebase-admin/messaging';
 
-// If /vault/secrets/serviceAccountKey.json is missing or unreadable,
-// Firebase Admin will throw an unhandled Error and crash Node.js immediately.
-admin.initializeApp({
-  credential: admin.credential.applicationDefault(),
+// 1. Fail fast on boot if Vault credentials are missing/invalid
+try {
+  admin.initializeApp({
+    credential: admin.credential.applicationDefault(),
+  });
+  console.log('Firebase Admin initialized successfully.');
+} catch (error) {
+  console.error('Failed to initialize Firebase Admin:', error);
+  process.exit(1); // Crash container so Swarm handles restart
+}
+
+const app = express();
+app.use(express.json());
+
+const PORT = process.env.PORT || 3000;
+
+// 2. Health Check Endpoint for Docker / Swarm / Load Balancer
+app.get('/health', (_req: Request, res: Response) => {
+  // Verifies Firebase app is initialized
+  if (admin.apps.length > 0) {
+    res.status(200).json({ status: 'UP', firebase: 'connected' });
+  } else {
+    res.status(503).json({ status: 'DOWN', firebase: 'disconnected' });
+  }
 });
 
-const registrationToken =
-  'f6RnUAZijupKkpngRrJ7UP:APA91bFnYlxQLcO6vXZXK5NGCmuuQhi2rtEhH8g1LufGiNwqiTMRDa06ySzn6SjIFK-3rWh9rm04xAkFQ4xpg4Jm9lnEL71KYNqGE07Pc3rnpeHd9X4cbGY';
+// 3. API Endpoint to Send Push Notifications
+app.post('/send-notification', async (req: Request, res: Response) => {
+  try {
+    const { token, title, body } = req.body;
 
-const message: Message = {
-  notification: {
-    title: 'Notification Title',
-    body: 'This is the body of the notification.',
-  },
-  webpush: {
-    notification: {
-      badge:
-        'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/uptime-kuma.svg',
-      icon: 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/uptime-kuma.svg',
-    },
-  },
-  token: registrationToken,
-};
+    if (!token || !title || !body) {
+      res.status(400).json({ error: 'Missing required fields: token, title, body' });
+      return;
+    }
 
-admin
-  .messaging()
-  .send(message)
-  .then((response) => {
-    console.log('Successfully sent message:', response);
-  })
-  .catch((error: unknown) => {
+    const message: Message = {
+      notification: { title, body },
+      webpush: {
+        notification: {
+          badge: 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/uptime-kuma.svg',
+          icon: 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/uptime-kuma.svg',
+        },
+      },
+      token,
+    };
+
+    const response = await admin.messaging().send(message);
+    res.status(200).json({ success: true, messageId: response });
+  } catch (error: unknown) {
     console.error('Error sending message:', error);
-    process.exit(1); // Force exit on failure
-  });
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
