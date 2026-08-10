@@ -1,0 +1,54 @@
+kind: pipeline
+type: docker
+name: deploy-pipeline
+
+steps:
+  # 1. Build and push Next.js Portfolio Docker image
+  - name: build-and-push
+    image: plugins/docker
+    settings:
+      registry: registry.tvone.ao
+      repo: registry.tvone.ao/firebase-notifications
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+      tags:
+        - latest
+      dockerfile: Dockerfile
+      context: .
+
+  # 2. Trigger service update via Docker Socket Proxy API
+  - name: update-via-docker-socket
+    image: curlimages/curl:latest
+    environment:
+      DOCKER_SOCKET_API_TOKEN:
+        from_secret: docker_socket_api_token
+    commands:
+      - >
+        curl -X POST https://docker.tvone.ao/compose/services/firebase-notifications
+        -H "Authorization: Bearer $DOCKER_SOCKET_API_TOKEN"
+        -H "Content-Type: application/json"
+        -d "{\"image\":\"registry.tvone.ao/firebase-notifications:latest\"}"
+
+---
+# Secret References
+kind: secret
+name: docker_username
+get:
+  path: docker_username
+  name: docker_username
+
+---
+kind: secret
+name: docker_password
+get:
+  path: docker_password
+  name: docker_password
+
+---
+kind: secret
+name: docker_socket_api_token
+get:
+  path: docker_socket_api_token
+  name: docker_socket_api_token
