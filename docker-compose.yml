@@ -1,0 +1,10 @@
+services:
+  firebase-notification:
+    build: .
+    environment:
+      # Absolute path inside the container (must match the volume target below)
+      GOOGLE_APPLICATION_CREDENTIALS: /secrets/serviceAccountKey.json
+    volumes:
+      # Host path comes from .env / shell; defaults to ./serviceAccountKey.json
+      - ${GOOGLE_APPLICATION_CREDENTIALS:-./serviceAccountKey.json}:/secrets/serviceAccountKey.json:ro
+    restart: "no"
