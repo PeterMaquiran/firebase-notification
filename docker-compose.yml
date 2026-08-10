@@ -7,4 +7,4 @@ services:
     volumes:
       # Host path comes from .env / shell; defaults to ./serviceAccountKey.json
       - ${GOOGLE_APPLICATION_CREDENTIALS:-./serviceAccountKey.json}:/secrets/serviceAccountKey.json:ro
-    restart: "no"
+    restart: unless-stopped
