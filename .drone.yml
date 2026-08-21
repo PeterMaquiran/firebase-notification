@@ -26,7 +26,7 @@ steps:
         from_secret: docker_socket_api_token
     commands:
       - >
-        curl -X POST https://docker.tvone.ao/compose/services/notification_firebase-notifications
+        curl -X POST https://docker.tvone.ao/swarm/services/notification_firebase-notifications
         -H "Authorization: Bearer $DOCKER_SOCKET_API_TOKEN"
         -H "Content-Type: application/json"
         -d "{\"image\":\"registry.tvone.ao/firebase-notifications:latest\"}"
