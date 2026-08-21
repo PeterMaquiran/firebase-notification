@@ -1,13 +1,14 @@
 import admin from 'firebase-admin';
+import { logger } from './logger.js';
 
 export function initFirebase(): void {
   try {
     admin.initializeApp({
       credential: admin.credential.applicationDefault(),
     });
-    console.log('Firebase Admin initialized successfully.');
+    logger.info('Firebase Admin initialized successfully');
   } catch (error) {
-    console.error('Failed to initialize Firebase Admin:', error);
+    logger.fatal({ err: error }, 'Failed to initialize Firebase Admin');
     process.exit(1);
   }
 }

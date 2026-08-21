@@ -1,7 +1,8 @@
 import 'dotenv/config';
-import express, { type Request, type Response } from 'express';
+import express, { type NextFunction, type Request, type Response } from 'express';
 import { errorMessage } from './utils/error.js';
 import { initFirebase, isFirebaseReady } from './utils/firebase.js';
+import { logger } from './utils/logger.js';
 import {
   DEFAULT_BROADCAST_TOPIC,
   FCM_DEVICE_TOKEN,
@@ -40,7 +41,7 @@ app.post('/api/v1/notifications', async (req: Request, res: Response) => {
     const messageId = await sendToToken(token, title, body);
     res.status(200).json({ success: true, data: { messageId } });
   } catch (error: unknown) {
-    console.error('Error sending notification:', error);
+    logger.error({ err: error }, 'Error sending notification');
     res.status(500).json({ success: false, error: errorMessage(error) });
   }
 });
@@ -66,7 +67,7 @@ app.post('/api/v1/notifications/broadcast', async (req: Request, res: Response) 
       data: { messageId, topic: targetTopic },
     });
   } catch (error: unknown) {
-    console.error('Error broadcasting notification:', error);
+    logger.error({ err: error }, 'Error broadcasting notification');
     res.status(500).json({ success: false, error: errorMessage(error) });
   }
 });
@@ -85,16 +86,25 @@ app.post('/api/v1/notifications/uptime-kuma', async (req: Request, res: Response
     const messageId = await sendToToken(FCM_DEVICE_TOKEN, title, body);
     res.status(200).json({ success: true, data: { messageId } });
   } catch (error: unknown) {
-    console.error('Error sending Uptime Kuma notification:', error);
+    logger.error({ err: error }, 'Error sending Uptime Kuma notification');
     res.status(500).json({ success: false, error: errorMessage(error) });
   }
 });
 
+app.use((err: unknown, _req: Request, res: Response, next: NextFunction) => {
+  logger.error({ err }, 'Unhandled request error');
+  if (res.headersSent) {
+    next(err);
+    return;
+  }
+  res.status(500).json({ success: false, error: errorMessage(err) });
+});
+
 app.listen(PORT, () => {
   if (!FCM_DEVICE_TOKEN) {
-    console.warn(
-      'FCM_DEVICE_TOKEN is not set; /api/v1/notifications/uptime-kuma will return 503.',
+    logger.warn(
+      'FCM_DEVICE_TOKEN is not set; /api/v1/notifications/uptime-kuma will return 503',
     );
   }
-  console.log(`Server running on port ${PORT}`);
+  logger.info({ port: PORT }, 'Server running');
 });
