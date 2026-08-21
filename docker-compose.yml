@@ -6,6 +6,7 @@ services:
     environment:
       - PORT=3000
       - GOOGLE_APPLICATION_CREDENTIALS=/vault/secrets/serviceAccountKey.json
+      - FCM_DEVICE_TOKEN=${FCM_DEVICE_TOKEN}
     volumes:
       - ./secrets:/vault/secrets:ro
     ports:
